@@ -476,7 +476,8 @@ st.subheader("From user reviews to product opportunities")
 # ── Filtros ───────────────────────────────────────────────────
 app_name = st.text_input(
     "📱 Nome da App",
-    placeholder="ex: com.strava, com.goodreads.app"
+    placeholder="ex: com.strava, com.goodreads.app",
+    help="Digite o package name da app do Google Play. Você pode encontrar este nome na URL da app na Play Store (ex: play.google.com/store/apps/details?id=com.strava)"
 )
 
 col1, col2 = st.columns(2)
@@ -548,22 +549,17 @@ if st.button("Analyse"):
                 
                 insights = []
                 for idx, review in enumerate(filtered_reviews[:max_to_analyze]):
-                    st.write(f"   Processing review {idx+1}/{max_to_analyze}...")
                     insight = analyze_review(review, app_name)
                     
                     if insight:
                         # Validate the product opportunity
                         product_opportunity = insight.get("product_opportunity", "")
-                        st.write(f"   ✓ Got insight: {product_opportunity[:50]}...")
                         validation = validate_opportunity(product_opportunity, app_name)
                         
                         if validation:
                             insight["validation"] = validation
-                            st.write(f"   ✓ Validated: {validation.get('verdict', 'unknown')}")
                         
                         insights.append(insight)
-                    else:
-                        st.warning(f"   ✗ Failed to analyze review {idx+1}")
                 
                 st.write(f"✅ Analyzed {len(insights)} reviews")
                 
