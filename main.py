@@ -11,12 +11,17 @@ api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
 
-def get_reviews(app_name, count=50, rating_filter=0, sort_order=1):
+def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_ratings=None):
     """
     Fetch reviews from Google Play and filter by rating and sort order.
     Returns a list of review dicts with 'text' and 'rating'.
     """
-    print(f"\n📱 Fetching {count} reviews from {app_name}...")
+    ratings_to_filter = selected_ratings if selected_ratings else ([] if rating_filter == 0 else [rating_filter])
+    fetch_count = count * 3 if ratings_to_filter else count
+
+    print(f"\n📱 Fetching reviews from {app_name}...")
+    if ratings_to_filter:
+        print(f"   Target: {count} reviews with ratings {ratings_to_filter}")
     
     try:
         # Map sort order to Sort enum
@@ -29,18 +34,21 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1):
         
         sort_by = sort_map[sort_order]
         
-        # Fetch reviews with selected sort order
-        reviews_data, continuation_token = reviews(app_name, count=count, sort=sort_by, lang="en", country="US")
+        # Fetch more reviews when filtering by ratings to improve chance of reaching target count
+        reviews_data, continuation_token = reviews(app_name, count=fetch_count, sort=sort_by, lang="en", country="US")
         
         # Filter reviews by rating
         filtered_reviews = []
         for review in reviews_data:
             rating = review.get("score", 0)
-            if rating_filter == 0 or rating == rating_filter:
+            if not ratings_to_filter or rating in ratings_to_filter:
                 filtered_reviews.append({
                     'text': review.get("content", ""),
                     'rating': rating
                 })
+
+            if len(filtered_reviews) >= count:
+                break
         
         # Determine sort name
         sort_names = {
@@ -50,7 +58,7 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1):
             4: "Lowest rated"
         }
         
-        rating_text = f"{rating_filter} star(s)" if rating_filter != 0 else "all ratings"
+        rating_text = f"ratings {ratings_to_filter}" if ratings_to_filter else "all ratings"
         
         print(f"\n✅ Found {len(filtered_reviews)} reviews")
         print(f"   Rating: {rating_text}")
@@ -61,20 +69,7 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1):
     except Exception as e:
         print(f"❌ Error fetching reviews: {e}")
         return []
-        def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_ratings=None):
-            """
-            Fetch reviews from Google Play and filter by rating and sort order.
-            Returns a list of review dicts with 'text' and 'rating'.
-    
-            Args:
-                selected_ratings: List of ratings to filter by (e.g., [1, 2, 3])
-            """
-            ratings_to_filter = selected_ratings if selected_ratings else ([] if rating_filter == 0 else [rating_filter])
-            fetch_count = count * 3 if ratings_to_filter else count
-    
-            print(f"\n📱 Fetching reviews from {app_name}...")
-            if ratings_to_filter:
-                print(f"   Target: {count} reviews with ratings {ratings_to_filter}")
+
 def analyze_review(review_text, app_name):
     """
     Analyze a single review using Gemini as a Senior Product Manager.
@@ -528,18 +523,22 @@ if st.button("Analyse"):
         sort_order = 2 if sort_option == "Most Relevant" else 1
         
         with st.spinner("Fetching reviews and analysing..."):
-            # Fetch reviews (all ratings, then filter)
+            # Fetch reviews already filtered by selected star ratings
             st.write("📱 Fetching reviews from Google Play...")
-            reviews_data = get_reviews(app_name, num_reviews, rating_filter=0, sort_order=sort_order)
+            reviews_data = get_reviews(
+                app_name,
+                num_reviews,
+                rating_filter=0,
+                sort_order=sort_order,
+                selected_ratings=selected_stars if selected_stars else None,
+            )
             
             st.write(f"✅ Fetched {len(reviews_data)} reviews from Google Play")
-            
-            # Filter by selected stars
+
+            reviews_data_filtered = reviews_data
             if selected_stars:
-                reviews_data_filtered = [r for r in reviews_data if r['rating'] in selected_stars]
-                st.write(f"✅ Filtered to {len(reviews_data_filtered)} reviews with ratings: {selected_stars}")
+                st.write(f"✅ Using {len(reviews_data_filtered)} reviews with ratings: {selected_stars}")
             else:
-                reviews_data_filtered = reviews_data
                 st.write(f"✅ Using all {len(reviews_data_filtered)} reviews (no rating filter)")
             
             if not reviews_data_filtered:
@@ -554,8 +553,8 @@ if st.button("Analyse"):
                 # Show some reviews as debug
                 st.write(f"📝 Sample review text: {filtered_reviews[0][:100]}...")
 
-                # Analyze reviews
-                max_to_analyze = min(3, len(filtered_reviews))
+                # Analyze up to the amount selected in the input
+                max_to_analyze = min(num_reviews, len(filtered_reviews))
                 st.write(f"🤖 Analyzing {max_to_analyze} reviews...")
 
                 insights = []
