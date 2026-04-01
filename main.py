@@ -42,9 +42,11 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_rati
         for review in reviews_data:
             rating = review.get("score", 0)
             if not ratings_to_filter or rating in ratings_to_filter:
+                review_date = review.get("at")
                 filtered_reviews.append({
                     'text': review.get("content", ""),
-                    'rating': rating
+                    'rating': rating,
+                    'date': review_date.isoformat() if review_date else "N/A"
                 })
 
             if len(filtered_reviews) >= count:
@@ -240,6 +242,7 @@ def insights_to_dataframe(insights, reviews_data):
         review = reviews_data[i-1]  # Corresponding review data
         row = {
             "review_id": i,
+            "review_date": review.get('date', "N/A"),
             "rating": review['rating'],
             "original_comment": review['text'],
             "root_problem": insight.get("root_problem", "N/A"),
