@@ -1,0 +1,218 @@
+{
+  "app": "strava",
+  "analysis_date": "2026-03-27T20:03:39.602569",
+  "total_reviews": 10,
+  "insights": [
+    {
+      "review_id": 1,
+      "root_problem": "Users cannot easily share their workout progress with non-Strava friends",
+      "user_gap": "Ability to generate shareable workout summaries for social media",
+      "product_opportunity": "Add one-click social media sharing with pre-made workout cards",
+      "confidence": "high",
+      "verdict": "feasible",
+      "validation_reason": "Social sharing is in scope and improves engagement"
+    },
+    {
+      "review_id": 2,
+      "root_problem": "GPS tracking sometimes loses signal in urban areas with tall buildings",
+      "user_gap": "More reliable tracking in challenging environments",
+      "product_opportunity": "Implement fallback tracking using phone accelerometer + WiFi positioning",
+      "confidence": "medium",
+      "verdict": "feasible",
+      "validation_reason": "Hybrid tracking is feasible and addresses real need"
+    },
+    {
+      "review_id": 3,
+      "root_problem": "Athletes want to compare training intensity objectively",
+      "user_gap": "Easy visualization of training zones across different activity types",
+      "product_opportunity": "Add cross-activity training zone comparison dashboard",
+      "confidence": "high",
+      "verdict": "feasible",
+      "validation_reason": "Fits product roadmap and valuable for coaching"
+    },
+    {
+      "review_id": 4,
+      "root_problem": "Users feel unmotivated by vague weekly goals",
+      "user_gap": "Smart goal suggestions based on historical performance",
+      "product_opportunity": "AI-powered weekly goal recommendations with completion prediction",
+      "confidence": "medium",
+      "verdict": "feasible",
+      "validation_reason": "AI feature is in development roadmap"
+    },
+    {
+      "review_id": 5,
+      "root_problem": "Runners cannot easily find safe running routes in unknown areas",
+      "user_gap": "Route recommendations based on safety metrics",
+      "product_opportunity": "Safety-scored route suggestions (lighting, crowds, traffic)",
+      "confidence": "medium",
+      "verdict": "feasible",
+      "validation_reason": "Route features exist, safety scoring is natural extension"
+    },
+    {
+      "review_id": 6,
+      "root_problem": "Cyclists struggle to plan century rides due to elevation data",
+      "user_gap": "Elevation profile preview before starting a route",
+      "product_opportunity": "Route elevation preview with difficulty classification",
+      "confidence": "high",
+      "verdict": "feasible",
+      "validation_reason": "Elevation data available, simple UI addition"
+    },
+    {
+      "review_id": 7,
+      "root_problem": "Users lose workout data when phone dies mid-activity",
+      "user_gap": "Automatic backup and resume capability",
+      "product_opportunity": "Cloud sync every 30 seconds with activity resume feature",
+      "confidence": "medium",
+      "verdict": "feasible",
+      "validation_reason": "Cloud infrastructure exists, engineering effort moderate"
+    },
+    {
+      "review_id": 8,
+      "root_problem": "Friends cannot see real-time workout progress during activities",
+      "user_gap": "Live activity feed showing friend progress",
+      "product_opportunity": "Real-time friend tracking with location sharing toggle",
+      "confidence": "high",
+      "verdict": "feasible",
+      "validation_reason": "Real-time pushing infrastructure exists"
+    },
+    {
+      "review_id": 9,
+      "root_problem": "Premium features feel disconnected from free tier value",
+      "user_gap": "Clearer premium feature benefits",
+      "product_opportunity": "Feature unlock roadmap showing when free users get premium features",
+      "confidence": "medium",
+      "verdict": "feasible",
+      "validation_reason": "UI/gamification feature, low complexity"
+    },
+    {
+      "review_id": 10,
+      "root_problem": "Users cannot track gym workouts effectively",
+      "user_gap": "Structured gym workout logging with exercise templates",
+      "product_opportunity": "Pre-built gym workout library with rep/weight tracking",
+      "confidence": "high",
+      "verdict": "feasible",
+      "validation_reason": "Aligns with product expansion into fitness"
+    }
+  ],
+  "themes": {
+    "Social & Community": {
+      "count": 2,
+      "opportunities": [
+        {
+          "review_id": 1,
+          "root_problem": "Users cannot easily share their workout progress with non-Strava friends",
+          "user_gap": "Ability to generate shareable workout summaries for social media",
+          "product_opportunity": "Add one-click social media sharing with pre-made workout cards",
+          "confidence": "high",
+          "verdict": "feasible",
+          "validation_reason": "Social sharing is in scope and improves engagement"
+        },
+        {
+          "review_id": 8,
+          "root_problem": "Friends cannot see real-time workout progress during activities",
+          "user_gap": "Live activity feed showing friend progress",
+          "product_opportunity": "Real-time friend tracking with location sharing toggle",
+          "confidence": "high",
+          "verdict": "feasible",
+          "validation_reason": "Real-time pushing infrastructure exists"
+        }
+      ]
+    },
+    "Tracking & Data": {
+      "count": 3,
+      "opportunities": [
+        {
+          "review_id": 2,
+          "root_problem": "GPS tracking sometimes loses signal in urban areas with tall buildings",
+          "user_gap": "More reliable tracking in challenging environments",
+          "product_opportunity": "Implement fallback tracking using phone accelerometer + WiFi positioning",
+          "confidence": "medium",
+          "verdict": "feasible",
+          "validation_reason": "Hybrid tracking is feasible and addresses real need"
+        },
+        {
+          "review_id": 7,
+          "root_problem": "Users lose workout data when phone dies mid-activity",
+          "user_gap": "Automatic backup and resume capability",
+          "product_opportunity": "Cloud sync every 30 seconds with activity resume feature",
+          "confidence": "medium",
+          "verdict": "feasible",
+          "validation_reason": "Cloud infrastructure exists, engineering effort moderate"
+        },
+        {
+          "review_id": 10,
+          "root_problem": "Users cannot track gym workouts effectively",
+          "user_gap": "Structured gym workout logging with exercise templates",
+          "product_opportunity": "Pre-built gym workout library with rep/weight tracking",
+          "confidence": "high",
+          "verdict": "feasible",
+          "validation_reason": "Aligns with product expansion into fitness"
+        }
+      ]
+    },
+    "Analytics & Insights": {
+      "count": 1,
+      "opportunities": [
+        {
+          "review_id": 3,
+          "root_problem": "Athletes want to compare training intensity objectively",
+          "user_gap": "Easy visualization of training zones across different activity types",
+          "product_opportunity": "Add cross-activity training zone comparison dashboard",
+          "confidence": "high",
+          "verdict": "feasible",
+          "validation_reason": "Fits product roadmap and valuable for coaching"
+        }
+      ]
+    },
+    "Route & Navigation": {
+      "count": 2,
+      "opportunities": [
+        {
+          "review_id": 5,
+          "root_problem": "Runners cannot easily find safe running routes in unknown areas",
+          "user_gap": "Route recommendations based on safety metrics",
+          "product_opportunity": "Safety-scored route suggestions (lighting, crowds, traffic)",
+          "confidence": "medium",
+          "verdict": "feasible",
+          "validation_reason": "Route features exist, safety scoring is natural extension"
+        },
+        {
+          "review_id": 6,
+          "root_problem": "Cyclists struggle to plan century rides due to elevation data",
+          "user_gap": "Elevation profile preview before starting a route",
+          "product_opportunity": "Route elevation preview with difficulty classification",
+          "confidence": "high",
+          "verdict": "feasible",
+          "validation_reason": "Elevation data available, simple UI addition"
+        }
+      ]
+    },
+    "User Engagement": {
+      "count": 2,
+      "opportunities": [
+        {
+          "review_id": 4,
+          "root_problem": "Users feel unmotivated by vague weekly goals",
+          "user_gap": "Smart goal suggestions based on historical performance",
+          "product_opportunity": "AI-powered weekly goal recommendations with completion prediction",
+          "confidence": "medium",
+          "verdict": "feasible",
+          "validation_reason": "AI feature is in development roadmap"
+        },
+        {
+          "review_id": 9,
+          "root_problem": "Premium features feel disconnected from free tier value",
+          "user_gap": "Clearer premium feature benefits",
+          "product_opportunity": "Feature unlock roadmap showing when free users get premium features",
+          "confidence": "medium",
+          "verdict": "feasible",
+          "validation_reason": "UI/gamification feature, low complexity"
+        }
+      ]
+    },
+    "Workouts & Fitness": {
+      "count": 0,
+      "opportunities": []
+    }
+  }
+}
