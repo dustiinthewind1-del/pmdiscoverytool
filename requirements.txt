@@ -1,11 +1,5 @@
-# Core app dependencies
-streamlit==1.55.0
-google-play-scraper==1.2.7
-google-generativeai==0.8.6
-pandas==2.3.3
-python-dotenv==1.2.2
-
-# grpc / google API dependency alignment (Python 3.14)
-grpcio>=1.78.0,<2.0.0
-grpcio-status>=1.78.0,<2.0.0
-google-api-core>=2.30.0,<2.31.0
+streamlit
+google-play-scraper
+google-generativeai
+pandas
+python-dotenv

@@ -61,8 +61,20 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1):
     except Exception as e:
         print(f"❌ Error fetching reviews: {e}")
         return []
-
-
+        def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_ratings=None):
+            """
+            Fetch reviews from Google Play and filter by rating and sort order.
+            Returns a list of review dicts with 'text' and 'rating'.
+    
+            Args:
+                selected_ratings: List of ratings to filter by (e.g., [1, 2, 3])
+            """
+            ratings_to_filter = selected_ratings if selected_ratings else ([] if rating_filter == 0 else [rating_filter])
+            fetch_count = count * 3 if ratings_to_filter else count
+    
+            print(f"\n📱 Fetching reviews from {app_name}...")
+            if ratings_to_filter:
+                print(f"   Target: {count} reviews with ratings {ratings_to_filter}")
 def analyze_review(review_text, app_name):
     """
     Analyze a single review using Gemini as a Senior Product Manager.
@@ -75,18 +87,28 @@ Your job is to read a user review and extract a structured product insight, read
 
 App: "{app_name}"
 Review: "{review_text}"
-
-Respond ONLY in valid JSON with this exact structure:
+                # Fetch reviews with selected sort order (fetch more if filtering by ratings)
+                reviews_data, continuation_token = reviews(app_name, count=fetch_count, sort=sort_by, lang="en", country="US")
 
 {{
   "theme": "2-3 words. The category this problem belongs to. Be consistent across reviews (e.g. GPS Accuracy, Paywall, Onboarding, Performance, Data Trust, Social Features, Sync Issues)",
   
   "problem_statement": "One clear sentence. What is broken from the user's perspective. Start with 'Users cannot...' or 'Users struggle to...'",
-  
+                    if ratings_to_filter:
+                        if rating in ratings_to_filter:
+                            filtered_reviews.append({
+                                'text': review.get("content", ""),
+                                'rating': rating
+                            })
+                    else:
   "insight": "One sentence. The deeper reason behind the complaint — what this tells us about user behaviour or expectations.",
   
   "opportunity": "One sentence. A specific, buildable product solution. Start with an action verb (Add, Show, Allow, Fix, Enable, Improve).",
   
+            
+                    if len(filtered_reviews) >= count:
+                        filtered_reviews = filtered_reviews[:count]
+                        break
   "acceptance_criteria": "One sentence. How we would know this opportunity is successfully delivered. Start with 'Success when...'",
   
   "priority_signal": "high, medium, or low — based on how much this impacts the core value proposition of the app",
@@ -492,7 +514,7 @@ with col2:
     num_reviews = st.number_input(
         "🔢 Número de reviews",
         min_value=5,
-        max_value=100,
+        max_value=200,
         value=20,
         step=5
     )
@@ -539,26 +561,26 @@ if st.button("Analyse"):
             else:
                 # Get texts for analysis
                 filtered_reviews = [r['text'] for r in reviews_data_filtered]
-                
+
                 # Show some reviews as debug
                 st.write(f"📝 Sample review text: {filtered_reviews[0][:100]}...")
-                
+
                 # Analyze reviews
-                max_to_analyze = min(3, len(filtered_reviews))  # Limit to 3 for testing
+                max_to_analyze = min(3, len(filtered_reviews))
                 st.write(f"🤖 Analyzing {max_to_analyze} reviews...")
-                
+
                 insights = []
-                for idx, review in enumerate(filtered_reviews[:max_to_analyze]):
+                for review in filtered_reviews[:max_to_analyze]:
                     insight = analyze_review(review, app_name)
-                    
+
                     if insight:
                         # Validate the product opportunity
                         product_opportunity = insight.get("product_opportunity", "")
                         validation = validate_opportunity(product_opportunity, app_name)
-                        
+
                         if validation:
                             insight["validation"] = validation
-                        
+
                         insights.append(insight)
                 
                 st.write(f"✅ Analyzed {len(insights)} reviews")
