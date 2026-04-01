@@ -80,40 +80,30 @@ def analyze_review(review_text, app_name):
     Analyze a single review using Gemini as a Senior Product Manager.
     Returns insight as JSON.
     """
-    prompt = """
+    prompt = f"""
 You are a senior Product Manager with 20 years of experience conducting user research.
 
 Your job is to read a user review and extract a structured product insight, ready to be shared with a product team.
 
 App: "{app_name}"
 Review: "{review_text}"
-                # Fetch reviews with selected sort order (fetch more if filtering by ratings)
-                reviews_data, continuation_token = reviews(app_name, count=fetch_count, sort=sort_by, lang="en", country="US")
+
+Respond ONLY in valid JSON with this exact structure:
 
 {{
   "theme": "2-3 words. The category this problem belongs to. Be consistent across reviews (e.g. GPS Accuracy, Paywall, Onboarding, Performance, Data Trust, Social Features, Sync Issues)",
-  
+
   "problem_statement": "One clear sentence. What is broken from the user's perspective. Start with 'Users cannot...' or 'Users struggle to...'",
-                    if ratings_to_filter:
-                        if rating in ratings_to_filter:
-                            filtered_reviews.append({
-                                'text': review.get("content", ""),
-                                'rating': rating
-                            })
-                    else:
-  "insight": "One sentence. The deeper reason behind the complaint — what this tells us about user behaviour or expectations.",
-  
+
+  "insight": "One sentence. The deeper reason behind the complaint - what this tells us about user behavior or expectations.",
+
   "opportunity": "One sentence. A specific, buildable product solution. Start with an action verb (Add, Show, Allow, Fix, Enable, Improve).",
-  
-            
-                    if len(filtered_reviews) >= count:
-                        filtered_reviews = filtered_reviews[:count]
-                        break
+
   "acceptance_criteria": "One sentence. How we would know this opportunity is successfully delivered. Start with 'Success when...'",
-  
-  "priority_signal": "high, medium, or low — based on how much this impacts the core value proposition of the app",
-  
-  "confidence": "high, medium, or low — based on how clearly the review supports this insight"
+
+  "priority_signal": "high, medium, or low - based on how much this impacts the core value proposition of the app",
+
+  "confidence": "high, medium, or low - based on how clearly the review supports this insight"
 }}
 
 Rules:
@@ -123,7 +113,6 @@ Rules:
 - Be consistent with theme naming across reviews
 - JSON only, no extra text
 """
-    prompt = prompt.format(app_name=app_name, review_text=review_text)
     
     try:
         response = genai.GenerativeModel("gemini-2.5-flash").generate_content(prompt)
