@@ -497,29 +497,29 @@ st.subheader("From user reviews to product opportunities")
 
 # ── Filtros ───────────────────────────────────────────────────
 app_name = st.text_input(
-    "📱 Nome da App",
+    "📱 App Name",
     placeholder="ex: com.strava, com.goodreads.app",
-    help="Digite o package name da app do Google Play. Você pode encontrar este nome na URL da app na Play Store (ex: play.google.com/store/apps/details?id=com.strava)"
+    help="Enter the app package name from Google Play. You can find it in the app URL on Play Store (e.g., play.google.com/store/apps/details?id=com.strava)."
 )
 
 col1, col2 = st.columns(2)
 
 with col1:
     sort_option = st.selectbox(
-        "Filtrar por",
-        options=["Mais Relevantes", "Mais Recentes"]
+        "Sort by",
+        options=["Most Relevant", "Most Recent"]
     )
 
 with col2:
     num_reviews = st.number_input(
-        "🔢 Número de reviews",
+        "🔢 Number of reviews",
         min_value=5,
         max_value=200,
         value=20,
         step=5
     )
 
-st.write("Número de Estrelas")
+st.write("Star Rating")
 star_cols = st.columns(5)
 selected_stars = []
 
@@ -536,7 +536,7 @@ if st.button("Analyse"):
         st.error("Please enter an app name.")
     else:
         # Map sort option
-        sort_order = 2 if sort_option == "Mais Relevantes" else 1
+        sort_order = 2 if sort_option == "Most Relevant" else 1
         
         with st.spinner("Fetching reviews and analysing..."):
             # Fetch reviews (all ratings, then filter)

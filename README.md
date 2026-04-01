@@ -1,218 +1,218 @@
 # PM Discovery Tool
 
-Transforme reviews do Google Play em oportunidades de produto usando IA Gemini. Construído para Product Managers que querem descoberta estruturada mais rápida.
+Turn Google Play reviews into product opportunities using Gemini AI. Built for Product Managers who want faster, structured discovery.
 
-## 🚀 Visão Geral
+## 🚀 Overview
 
-O PM Discovery Tool é uma aplicação web que automatiza o processo de análise de feedback de usuários. Usando inteligência artificial (Google Gemini), a ferramenta extrai insights estruturados de reviews do Google Play, identifica problemas, oportunidades e prioriza melhorias de produto.
+PM Discovery Tool is a web application that automates user feedback analysis. Using Google Gemini, it extracts structured insights from Google Play reviews, identifies problems and opportunities, and helps prioritize product improvements.
 
-### ✨ Funcionalidades Principais
+### ✨ Key Features
 
-- **📱 Busca de Reviews**: Coleta reviews do Google Play com filtros por rating e ordenação
-- **🤖 Análise com IA**: Usa Gemini para extrair insights estruturados de cada review
-- **✅ Validação de Oportunidades**: Verifica se as oportunidades são viáveis e dentro do escopo
-- **📊 Agrupamento por Temas**: Organiza oportunidades similares por categorias
-- **🎯 Backlog Priorizado**: Cria lista de prioridades baseada em frequência e viabilidade
-- **📋 Resumo Executivo**: Gera relatório executivo das principais oportunidades
-- **💾 Exportação**: Salva resultados em JSON e CSV
+- **📱 Review Collection**: Fetches Google Play reviews with rating and sorting filters
+- **🤖 AI Analysis**: Uses Gemini to extract structured insights from each review
+- **✅ Opportunity Validation**: Checks whether opportunities are feasible and in scope
+- **📊 Theme Grouping**: Organizes similar opportunities by category
+- **🎯 Prioritized Backlog**: Builds a priority list based on frequency and feasibility
+- **📋 Executive Summary**: Generates a concise executive summary of top opportunities
+- **💾 Export**: Saves outputs as JSON and CSV
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tech Stack
 
 - **Python 3.8+**
-- **Streamlit** - Interface web
-- **Google Play Scraper** - Coleta de reviews
-- **Google Gemini AI** - Análise de texto
-- **Pandas** - Manipulação de dados
-- **python-dotenv** - Gerenciamento de variáveis de ambiente
+- **Streamlit** - Web interface
+- **Google Play Scraper** - Review collection
+- **Google Gemini AI** - Text analysis
+- **Pandas** - Data processing
+- **python-dotenv** - Environment variable management
 
-## 📦 Instalação
+## 📦 Installation
 
-### Pré-requisitos
+### Prerequisites
 
-- Python 3.8 ou superior
-- Conta Google Cloud com API Gemini habilitada
-- Chave de API do Gemini
+- Python 3.8 or higher
+- Google Cloud account with Gemini API enabled
+- Gemini API key
 
-### Passos de Instalação
+### Setup Steps
 
-1. **Clone o repositório:**
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/dustiinthewind1-del/pmdiscoverytool.git
    cd pmdiscoverytool
    ```
 
-2. **Crie um ambiente virtual:**
+2. **Create a virtual environment:**
    ```bash
    python -m venv venv
    source venv/bin/activate  # Linux/Mac
-   # ou
+   # or
    venv\Scripts\activate     # Windows
    ```
 
-3. **Instale as dependências:**
+3. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure as variáveis de ambiente:**
+4. **Configure environment variables:**
    ```bash
    cp .env.example .env
    ```
-   
-   Edite o arquivo `.env` e adicione sua chave da API Gemini:
+
+   Edit `.env` and add your Gemini API key:
    ```
-   GEMINI_API_KEY=sua_chave_aqui
+   GEMINI_API_KEY=your_api_key_here
    ```
 
-## 🚀 Como Usar
+## 🚀 Usage
 
-### Execução da Aplicação
+### Run the App
 
 ```bash
 streamlit run main.py
 ```
 
-A aplicação será aberta no seu navegador em `http://localhost:8501`.
+The app will open in your browser at `http://localhost:8501`.
 
-### Fluxo de Uso
+### User Flow
 
-1. **Digite o nome da app** (ex: `com.strava`, `com.goodreads.app`)
-2. **Configure os filtros:**
-   - Tipo de ordenação (Mais relevantes, Mais recentes)
-   - Número de reviews (5-100)
-   - Ratings desejados (1-5 estrelas)
-3. **Clique em "Analyse"**
-4. **Aguarde a análise** - a ferramenta irá:
-   - Buscar reviews
-   - Analisar cada review com IA
-   - Validar oportunidades
-   - Apresentar resultados em tabela
+1. **Enter the app package name** (e.g., `com.strava`, `com.goodreads.app`)
+2. **Configure filters:**
+   - Sort type (Most Relevant, Most Recent)
+   - Number of reviews (5-200)
+   - Desired ratings (1-5 stars)
+3. **Click "Analyse"**
+4. **Wait for processing** - the tool will:
+   - Fetch reviews
+   - Analyze each review with AI
+   - Validate opportunities
+   - Show results in a table
 
-### Exemplo de Uso
+### Example
 
-Para analisar reviews do Strava:
+To analyze Strava reviews:
 - App name: `com.strava`
 - Reviews: 20
-- Ratings: 1, 2, 3 estrelas
-- Ordenação: Mais relevantes
+- Ratings: 1, 2, 3 stars
+- Sort: Most Relevant
 
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```
 pmdiscoverytool/
-├── main.py                 # Aplicação principal Streamlit
-├── export_report.py        # Gerador de relatórios (CLI)
-├── requirements.txt        # Dependências Python
-├── .env.example           # Exemplo de configuração
-├── .gitignore             # Arquivos ignorados pelo Git
-├── README.md              # Este arquivo
-└── strava_*               # Arquivos de exemplo (CSV, JSON, XLSX)
+├── main.py                 # Main Streamlit application
+├── export_report.py        # Report generator (CLI)
+├── requirements.txt        # Python dependencies
+├── .env.example            # Environment config template
+├── .gitignore              # Ignored files
+├── README.md               # This file
+└── strava_*                # Sample output files (CSV, JSON, XLSX)
 ```
 
-## 🔧 Funcionalidades Detalhadas
+## 🔧 Detailed Functionality
 
-### Análise de Reviews
+### Review Analysis
 
-Cada review é analisada pelo Gemini com o prompt estruturado que extrai:
-- **Tema**: Categoria do problema (2-3 palavras)
-- **Declaração do Problema**: O que está quebrado da perspectiva do usuário
-- **Insight**: Razão mais profunda por trás da reclamação
-- **Oportunidade**: Solução específica e construível
-- **Critérios de Aceitação**: Como saber se foi implementado
-- **Sinal de Prioridade**: Alto/Médio/Baixo impacto
-- **Confiança**: Alto/Médio/Baixo na clareza do insight
+Each review is analyzed by Gemini with a structured prompt that extracts:
+- **Theme**: Problem category (2-3 words)
+- **Problem Statement**: What is broken from the user's perspective
+- **Insight**: Deeper reason behind the complaint
+- **Opportunity**: Specific, buildable solution
+- **Acceptance Criteria**: How success is measured
+- **Priority Signal**: High/Medium/Low impact
+- **Confidence**: High/Medium/Low confidence in the insight
 
-### Validação de Oportunidades
+### Opportunity Validation
 
-Cada oportunidade é validada quanto a:
-- **Viabilidade Técnica**: Pode ser construída?
-- **Escopo**: Está dentro do escopo atual da app?
-- **Novidade**: Já existe como feature?
+Each opportunity is validated for:
+- **Technical Feasibility**: Can this be built?
+- **Scope Fit**: Is it within current app scope?
+- **Novelty**: Does this already exist?
 
-### Agrupamento por Temas
+### Theme Grouping
 
-As oportunidades são agrupadas automaticamente por temas similares usando IA.
+Opportunities are automatically grouped by similar themes using AI.
 
-### Backlog Priorizado
+### Prioritized Backlog
 
-Cria uma lista priorizada baseada em:
-- Frequência de menção
-- Viabilidade das oportunidades
-- Pontuação ponderada
+Creates a ranked list based on:
+- Mention frequency
+- Opportunity feasibility
+- Weighted scoring
 
-## 📊 Saídas da Análise
+## 📊 Analysis Outputs
 
-### Arquivos Gerados
-- `{app_name}_insights.json` - Insights estruturados
-- `{app_name}_insights.csv` - Dados em formato tabular
-- `{app_name}_backlog.csv` - Backlog priorizado
+### Generated Files
+- `{app_name}_insights.json` - Structured insights
+- `{app_name}_insights.csv` - Tabular data
+- `{app_name}_backlog.csv` - Prioritized backlog
 
-### Formatos de Saída
-- **JSON**: Dados estruturados para processamento
-- **CSV**: Planilhas para análise manual
-- **Interface Web**: Visualização interativa no Streamlit
+### Output Formats
+- **JSON**: Structured data for integrations and processing
+- **CSV**: Spreadsheet-friendly format for manual analysis
+- **Web UI**: Interactive Streamlit visualization
 
-## 🔐 Configuração da API
+## 🔐 API Configuration
 
-### Obtendo Chave do Gemini
+### Get a Gemini Key
 
-1. Acesse [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Crie uma nova chave de API
-3. Copie a chave para o arquivo `.env`
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Copy the key into `.env`
 
-### Segurança
-- Nunca commite a chave real no Git
-- Use sempre variáveis de ambiente
-- O `.gitignore` já está configurado para ignorar `.env`
+### Security
+- Never commit your real API key
+- Always use environment variables
+- `.gitignore` is already set up to ignore `.env`
 
 ## 🐛 Troubleshooting
 
-### Problemas Comuns
+### Common Issues
 
-**Erro de API Key:**
-- Verifique se a chave está correta no `.env`
-- Confirme se a API Gemini está habilitada
+**API key error:**
+- Check if the key is correct in `.env`
+- Confirm Gemini API is enabled
 
-**Reviews não encontradas:**
-- Verifique o package name da app
-- Tente reduzir o número de reviews
-- Mude os filtros de rating
+**No reviews found:**
+- Verify the app package name
+- Try reducing the number of reviews
+- Change rating filters
 
-**Erro de dependências:**
-- Certifique-se de usar Python 3.8+
-- Reinstale as dependências: `pip install -r requirements.txt`
+**Dependency errors:**
+- Ensure you are using Python 3.8+
+- Reinstall dependencies: `pip install -r requirements.txt`
 
 ### Debug Mode
 
-Para mais detalhes durante a execução, observe o terminal onde o Streamlit está rodando.
+For more execution details, check the terminal where Streamlit is running.
 
-## 🤝 Contribuição
+## 🤝 Contributing
 
-Contribuições são bem-vindas! Para contribuir:
+Contributions are welcome. To contribute:
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push the branch (`git push origin feature/new-feature`)
+5. Open a Pull Request
 
-### Áreas de Melhoria
-- Suporte a mais stores (App Store, etc.)
-- Análise de sentimento mais avançada
-- Dashboard de métricas
-- Integração com ferramentas de PM (Jira, Linear, etc.)
+### Improvement Ideas
+- Support for more app stores (App Store, etc.)
+- More advanced sentiment analysis
+- Metrics dashboard
+- Integration with PM tools (Jira, Linear, etc.)
 
-## 📄 Licença
+## 📄 License
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+This project is licensed under the MIT License. See `LICENSE` for details.
 
-## 🙏 Agradecimentos
+## 🙏 Acknowledgements
 
-- Google Gemini por fornecer a IA
-- Google Play Scraper pela coleta de dados
-- Streamlit pela interface web
-- Comunidade Python pelos pacotes incríveis
+- Google Gemini for AI capabilities
+- Google Play Scraper for data collection
+- Streamlit for the web framework
+- Python community for excellent packages
 
 ---
 
-**Desenvolvido com ❤️ para Product Managers que querem acelerar sua descoberta de produto.**
+**Built with ❤️ for Product Managers who want to accelerate product discovery.**
