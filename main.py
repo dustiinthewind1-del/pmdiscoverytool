@@ -86,7 +86,7 @@ Review: "{review_text}"
 Respond ONLY in valid JSON with this exact structure:
 
 {{
-  "theme": "2-3 words. The category this problem belongs to. Be consistent across reviews (e.g. GPS Accuracy, Paywall, Onboarding, Performance, Data Trust, Social Features, Sync Issues)",
+    "theme": "Choose the most fitting category from this list: App Performance, App Crashes, Battery Drain, Loading Speed, Offline Mode, Data Accuracy, GPS Accuracy, Search Quality, Recommendation Quality, Onboarding Flow, Navigation Complexity, UI Clarity, Feature Discovery, Login Issues, Account Sync, Paywall Friction, Pricing Fairness, Free Tier Value, Subscription Management, Notification Overload, Alert Relevance, Social Features, Community Trust, Privacy Controls, Data Trust, Privacy Settings, Third-party Sync, Device Compatibility, Customer Support, Update Quality. If none fits, create a 2-3 word category.",
 
   "problem_statement": "One clear sentence. What is broken from the user's perspective. Start with 'Users cannot...' or 'Users struggle to...'",
 
