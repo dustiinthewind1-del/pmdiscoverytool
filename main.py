@@ -125,6 +125,17 @@ Rules:
                 response_text = response_text.strip()
         
         insight = json.loads(response_text)
+
+        # Normalize field names so downstream code can use consistent keys.
+        # Gemini returns: problem_statement, insight, opportunity
+        # Existing pipeline expects: root_problem, user_gap, product_opportunity
+        if "root_problem" not in insight and "problem_statement" in insight:
+            insight["root_problem"] = insight.get("problem_statement")
+        if "user_gap" not in insight and "insight" in insight:
+            insight["user_gap"] = insight.get("insight")
+        if "product_opportunity" not in insight and "opportunity" in insight:
+            insight["product_opportunity"] = insight.get("opportunity")
+
         return insight
     
     except json.JSONDecodeError as e:
