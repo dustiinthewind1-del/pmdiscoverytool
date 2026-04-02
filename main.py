@@ -1,9 +1,10 @@
 import os
 import json
+from urllib.parse import parse_qs, urlparse
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
-from google_play_scraper import reviews, Sort, search
+from google_play_scraper import reviews, Sort, search, app as get_app_details
 import google.generativeai as genai
 
 load_dotenv()
@@ -44,6 +45,46 @@ def search_apps(query, lang="en", country="us", limit=10):
     except Exception as e:
         print(f"❌ Error searching apps: {e}")
         return []
+
+
+def extract_app_id_from_url(value):
+    """
+    Extract Google Play package id from a Play Store URL.
+    """
+    if not value or "play.google.com" not in value:
+        return None
+
+    try:
+        parsed = urlparse(value.strip())
+        query_params = parse_qs(parsed.query)
+        app_ids = query_params.get("id", [])
+        return app_ids[0].strip() if app_ids and app_ids[0].strip() else None
+    except Exception:
+        return None
+
+
+@st.cache_data(show_spinner=False)
+def resolve_app_from_url(app_id, lang="en", country="us"):
+    """
+    Resolve app metadata from a Google Play package id.
+    """
+    if not app_id:
+        return None
+
+    try:
+        result = get_app_details(app_id, lang=lang, country=country.upper())
+        return {
+            "title": result.get("title", app_id),
+            "developer": result.get("developer", "Unknown developer"),
+            "app_id": app_id,
+        }
+    except Exception as e:
+        print(f"❌ Error resolving app from URL: {e}")
+        return {
+            "title": app_id,
+            "developer": "Unknown developer",
+            "app_id": app_id,
+        }
 
 
 def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_ratings=None, lang="en", country="us"):
@@ -536,10 +577,38 @@ st.subheader("From user reviews to product opportunities")
 
 # ── Filtros ───────────────────────────────────────────────────
 app_query = st.text_input(
-    "📱 Search App",
-    placeholder="e.g. Strava, Goodreads",
-    help="Search by app name and choose the correct result from the list."
+    "📱 Search App or Paste Play Store URL",
+    placeholder="e.g. Strava, Goodreads, or a Play Store link",
+    help="Search by app name or paste a Google Play Store URL."
 )
+
+search_lang = st.session_state.get("lang", "en")
+search_country = st.session_state.get("country", "us")
+selected_app_id = ""
+selected_app_name = ""
+
+if app_query.strip():
+    app_id_from_url = extract_app_id_from_url(app_query)
+
+    if app_id_from_url:
+        selected_app = resolve_app_from_url(app_id_from_url, lang=search_lang, country=search_country)
+        selected_app_id = selected_app["app_id"]
+        selected_app_name = selected_app["title"]
+        st.caption(f"Detected app from URL: {selected_app_name} ({selected_app_id})")
+    else:
+        app_results = search_apps(app_query, lang=search_lang, country=search_country)
+        if app_results:
+            selected_app_index = st.selectbox(
+                "Select app",
+                options=range(len(app_results)),
+                format_func=lambda index: f"{app_results[index]['title']} ({app_results[index]['developer']})",
+            )
+            selected_app = app_results[selected_app_index]
+            selected_app_id = selected_app["app_id"]
+            selected_app_name = selected_app["title"]
+            st.caption(f"Selected package: {selected_app_id}")
+        else:
+            st.warning("No apps found for that search. Try a different name or paste a Play Store URL.")
 
 col1, col2 = st.columns(2)
 
@@ -565,31 +634,15 @@ with st.expander("⚙️ Advanced Settings"):
             "Language",
             ["en", "pt", "es", "fr", "de"],
             index=0,
+            key="lang",
         )
     with col2:
         country = st.selectbox(
             "Country",
             ["us", "pt", "br", "gb", "es"],
             index=0,
+            key="country",
         )
-
-app_results = search_apps(app_query, lang=lang, country=country) if app_query.strip() else []
-selected_app_id = ""
-selected_app_name = ""
-
-if app_query.strip():
-    if app_results:
-        selected_app_index = st.selectbox(
-            "Select app",
-            options=range(len(app_results)),
-            format_func=lambda index: f"{app_results[index]['title']} ({app_results[index]['developer']})",
-        )
-        selected_app = app_results[selected_app_index]
-        selected_app_id = selected_app["app_id"]
-        selected_app_name = selected_app["title"]
-        st.caption(f"Selected package: {selected_app_id}")
-    else:
-        st.warning("No apps found for that search. Try a different name.")
 
 st.write("Star Rating")
 star_cols = st.columns(5)
