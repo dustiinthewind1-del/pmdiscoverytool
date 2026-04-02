@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
-from google_play_scraper import reviews, Sort
+from google_play_scraper import reviews, Sort, search
 import google.generativeai as genai
 
 load_dotenv()
@@ -11,7 +11,42 @@ api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
 
-def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_ratings=None):
+@st.cache_data(show_spinner=False)
+def search_apps(query, lang="en", country="us", limit=10):
+    """
+    Search Google Play apps by name and return lightweight result metadata.
+    """
+    if not query or not query.strip():
+        return []
+
+    try:
+        results = search(
+            query,
+            lang=lang,
+            country=country.upper(),
+            n_hits=limit,
+        )
+
+        apps = []
+        for result in results:
+            app_id = result.get("appId")
+            if not app_id:
+                continue
+
+            apps.append({
+                "title": result.get("title", app_id),
+                "developer": result.get("developer", "Unknown developer"),
+                "app_id": app_id,
+            })
+
+        return apps
+
+    except Exception as e:
+        print(f"❌ Error searching apps: {e}")
+        return []
+
+
+def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_ratings=None, lang="en", country="us"):
     """
     Fetch reviews from Google Play and filter by rating and sort order.
     Returns a list of review dicts with 'text' and 'rating'.
@@ -35,7 +70,13 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_rati
         sort_by = sort_map[sort_order]
         
         # Fetch more reviews when filtering by ratings to improve chance of reaching target count
-        reviews_data, continuation_token = reviews(app_name, count=fetch_count, sort=sort_by, lang="en", country="US")
+        reviews_data, continuation_token = reviews(
+            app_name,
+            count=fetch_count,
+            sort=sort_by,
+            lang=lang,
+            country=country.upper(),
+        )
         
         # Filter reviews by rating
         filtered_reviews = []
@@ -494,10 +535,10 @@ st.title("🔍 PM Discovery Tool")
 st.subheader("From user reviews to product opportunities")
 
 # ── Filtros ───────────────────────────────────────────────────
-app_name = st.text_input(
-    "📱 App Name",
-    placeholder="ex: com.strava, com.goodreads.app",
-    help="Enter the app package name from Google Play. You can find it in the app URL on Play Store (e.g., play.google.com/store/apps/details?id=com.strava)."
+app_query = st.text_input(
+    "📱 Search App",
+    placeholder="e.g. Strava, Goodreads",
+    help="Search by app name and choose the correct result from the list."
 )
 
 col1, col2 = st.columns(2)
@@ -517,6 +558,39 @@ with col2:
         step=5
     )
 
+with st.expander("⚙️ Advanced Settings"):
+    col1, col2 = st.columns(2)
+    with col1:
+        lang = st.selectbox(
+            "Language",
+            ["en", "pt", "es", "fr", "de"],
+            index=0,
+        )
+    with col2:
+        country = st.selectbox(
+            "Country",
+            ["us", "pt", "br", "gb", "es"],
+            index=0,
+        )
+
+app_results = search_apps(app_query, lang=lang, country=country) if app_query.strip() else []
+selected_app_id = ""
+selected_app_name = ""
+
+if app_query.strip():
+    if app_results:
+        selected_app_index = st.selectbox(
+            "Select app",
+            options=range(len(app_results)),
+            format_func=lambda index: f"{app_results[index]['title']} ({app_results[index]['developer']})",
+        )
+        selected_app = app_results[selected_app_index]
+        selected_app_id = selected_app["app_id"]
+        selected_app_name = selected_app["title"]
+        st.caption(f"Selected package: {selected_app_id}")
+    else:
+        st.warning("No apps found for that search. Try a different name.")
+
 st.write("Star Rating")
 star_cols = st.columns(5)
 selected_stars = []
@@ -530,21 +604,23 @@ for i, col in enumerate(star_cols):
             selected_stars.append(star)
 
 if st.button("Analyse"):
-    if not app_name.strip():
-        st.error("Please enter an app name.")
+    if not selected_app_id:
+        st.error("Please search for an app and select a result.")
     else:
         # Map sort option
         sort_order = 2 if sort_option == "Most Relevant" else 1
         
         with st.spinner("Fetching reviews and analysing..."):
             # Fetch reviews already filtered by selected star ratings
-            st.write("📱 Fetching reviews from Google Play...")
+            st.write(f"📱 Fetching reviews from Google Play for {selected_app_name}...")
             reviews_data = get_reviews(
-                app_name,
+                selected_app_id,
                 num_reviews,
                 rating_filter=0,
                 sort_order=sort_order,
                 selected_ratings=selected_stars if selected_stars else None,
+                lang=lang,
+                country=country,
             )
             
             st.write(f"✅ Fetched {len(reviews_data)} reviews from Google Play")
@@ -573,12 +649,12 @@ if st.button("Analyse"):
 
                 insights = []
                 for review in filtered_reviews[:max_to_analyze]:
-                    insight = analyze_review(review, app_name)
+                    insight = analyze_review(review, selected_app_name)
 
                     if insight:
                         # Validate the product opportunity
                         product_opportunity = insight.get("product_opportunity", "")
-                        validation = validate_opportunity(product_opportunity, app_name)
+                        validation = validate_opportunity(product_opportunity, selected_app_name)
 
                         if validation:
                             insight["validation"] = validation
