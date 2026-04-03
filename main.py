@@ -1,5 +1,6 @@
 import os
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import parse_qs, urlparse
 import pandas as pd
 import streamlit as st
@@ -10,6 +11,10 @@ import google.generativeai as genai
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
+
+
+def create_model():
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 
 @st.cache_data(show_spinner=False)
@@ -87,13 +92,32 @@ def resolve_app_from_url(app_id, lang="en", country="us"):
         }
 
 
+def parse_json_response(response_text):
+    """
+    Strip Markdown code fences and parse a JSON response body.
+    """
+    cleaned = response_text.strip()
+
+    if cleaned.startswith("```"):
+        parts = cleaned.split("```")
+        if len(parts) >= 2:
+            cleaned = parts[1]
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+            cleaned = cleaned.strip()
+
+    return json.loads(cleaned)
+
+
+@st.cache_data(show_spinner=False, ttl=900)
 def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_ratings=None, lang="en", country="us"):
     """
     Fetch reviews from Google Play and filter by rating and sort order.
     Returns a list of review dicts with 'text' and 'rating'.
     """
-    ratings_to_filter = selected_ratings if selected_ratings else ([] if rating_filter == 0 else [rating_filter])
-    fetch_count = count * 3 if ratings_to_filter else count
+    normalized_ratings = tuple(sorted(selected_ratings)) if selected_ratings else ()
+    ratings_to_filter = normalized_ratings if normalized_ratings else (() if rating_filter == 0 else (rating_filter,))
+    batch_size = min(max(count, 50), 200)
 
     print(f"\n📱 Fetching reviews from {app_name}...")
     if ratings_to_filter:
@@ -107,31 +131,47 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_rati
             3: Sort.NEWEST,  # Using NEWEST as fallback for highest rated
             4: Sort.NEWEST   # Using NEWEST as fallback for lowest rated
         }
-        
-        sort_by = sort_map[sort_order]
-        
-        # Fetch more reviews when filtering by ratings to improve chance of reaching target count
-        reviews_data, continuation_token = reviews(
-            app_name,
-            count=fetch_count,
-            sort=sort_by,
-            lang=lang,
-            country=country.upper(),
-        )
-        
-        # Filter reviews by rating
+        sort_by = sort_map.get(sort_order, Sort.NEWEST)
+
         filtered_reviews = []
-        for review in reviews_data:
-            rating = review.get("score", 0)
-            if not ratings_to_filter or rating in ratings_to_filter:
+        continuation_token = None
+        seen_reviews = set()
+        max_pages = 5 if ratings_to_filter else 2
+
+        for _ in range(max_pages):
+            reviews_data, continuation_token = reviews(
+                app_name,
+                count=batch_size,
+                sort=sort_by,
+                continuation_token=continuation_token,
+                lang=lang,
+                country=country.upper(),
+            )
+
+            if not reviews_data:
+                break
+
+            for review in reviews_data:
+                review_id = review.get("reviewId") or review.get("at")
+                if review_id in seen_reviews:
+                    continue
+
+                seen_reviews.add(review_id)
+                rating = review.get("score", 0)
+                if ratings_to_filter and rating not in ratings_to_filter:
+                    continue
+
                 review_date = review.get("at")
                 filtered_reviews.append({
-                    'text': review.get("content", ""),
-                    'rating': rating,
-                    'date': review_date.isoformat() if review_date else "N/A"
+                    "text": review.get("content", ""),
+                    "rating": rating,
+                    "date": review_date.isoformat() if review_date else "N/A",
                 })
 
-            if len(filtered_reviews) >= count:
+                if len(filtered_reviews) >= count:
+                    break
+
+            if len(filtered_reviews) >= count or not continuation_token:
                 break
         
         # Determine sort name
@@ -146,7 +186,7 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_rati
         
         print(f"\n✅ Found {len(filtered_reviews)} reviews")
         print(f"   Rating: {rating_text}")
-        print(f"   Sort: {sort_names[sort_order]}")
+        print(f"   Sort: {sort_names.get(sort_order, 'Most recent')}")
         
         return filtered_reviews
     
@@ -154,15 +194,17 @@ def get_reviews(app_name, count=50, rating_filter=0, sort_order=1, selected_rati
         print(f"❌ Error fetching reviews: {e}")
         return []
 
+
+@st.cache_data(show_spinner=False, ttl=3600)
 def analyze_review(review_text, app_name):
     """
-    Analyze a single review using Gemini as a Senior Product Manager.
+    Analyze and validate a single review using one Gemini request.
     Returns insight as JSON.
     """
     prompt = f"""
 You are a senior Product Manager with 20 years of experience conducting user research.
 
-Your job is to read a user review and extract a structured product insight, ready to be shared with a product team.
+Your job is to read a user review, extract a structured product insight, and validate whether the opportunity is feasible for this app.
 
 App: "{app_name}"
 Review: "{review_text}"
@@ -182,7 +224,12 @@ Respond ONLY in valid JSON with this exact structure:
 
   "priority_signal": "high, medium, or low - based on how much this impacts the core value proposition of the app",
 
-  "confidence": "high, medium, or low - based on how clearly the review supports this insight"
+    "confidence": "high, medium, or low - based on how clearly the review supports this insight",
+
+    "validation": {{
+        "verdict": "feasible / out_of_scope / already_exists",
+        "reason": "one sentence explanation"
+    }}
 }}
 
 Rules:
@@ -190,25 +237,13 @@ Rules:
 - No technical jargon
 - Write as if briefing a developer and a designer simultaneously
 - Be consistent with theme naming across reviews
+- Validate the opportunity against this app's likely scope before answering
 - JSON only, no extra text
 """
     
     try:
-        response = genai.GenerativeModel("gemini-2.5-flash").generate_content(prompt)
-        # Parse JSON from response
-        response_text = response.text.strip()
-        
-        # Remove markdown code blocks if present
-        if response_text.startswith("```"):
-            # Find closing ```
-            parts = response_text.split("```")
-            if len(parts) >= 2:
-                response_text = parts[1]
-                if response_text.startswith("json"):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
-        
-        insight = json.loads(response_text)
+        response = create_model().generate_content(prompt)
+        insight = parse_json_response(response.text)
 
         # Normalize field names so downstream code can use consistent keys.
         # Gemini returns: problem_statement, insight, opportunity
@@ -220,57 +255,67 @@ Rules:
         if "product_opportunity" not in insight and "opportunity" in insight:
             insight["product_opportunity"] = insight.get("opportunity")
 
+        if "validation" not in insight or not isinstance(insight.get("validation"), dict):
+            insight["validation"] = {
+                "verdict": "unknown",
+                "reason": "Validation not returned by model",
+            }
+
         return insight
     
     except json.JSONDecodeError as e:
         print(f"❌ JSON Parse Error: {e}")
-        print(f"   Response was: {response_text[:200]}")
         return None
     except Exception as e:
         print(f"❌ Error analyzing review: {e}")
         return None
 
 
-def validate_opportunity(product_opportunity, app_name):
+def analyze_review_with_validation(review_text, app_name):
     """
-    Validate if a product opportunity is feasible, in-scope, and new.
-    Returns validation result as JSON.
+    Run the full AI pipeline for a single review.
     """
-    prompt = f"""Given this product opportunity for {app_name}:
+    return analyze_review(review_text, app_name)
 
-"{product_opportunity}"
 
-Evaluate:
-1. Is this technically feasible for this type of app?
-2. Is it within the app's current scope?
-3. Does it already exist as a feature?
+def analyze_reviews_concurrently(reviews_list, app_name, max_reviews=10, max_workers=4, progress_callback=None):
+    """
+    Analyze reviews concurrently to reduce total wait time.
+    Returns successful review/insight pairs preserving input order.
+    """
+    target_reviews = reviews_list[:max_reviews]
+    if not target_reviews:
+        return []
 
-Respond in JSON:
-{{
-  "verdict": "feasible / out_of_scope / already_exists",
-  "reason": "one sentence explanation"
-}}
+    worker_count = min(max_workers, len(target_reviews))
+    results_by_index = {}
+    completed_reviews = 0
 
-Be strict. Only mark as feasible if genuinely new and buildable.
-Only respond with valid JSON, no other text."""
-    
-    try:
-        response = genai.GenerativeModel("gemini-2.5-flash").generate_content(prompt)
-        response_text = response.text.strip()
-        
-        # Remove markdown code blocks if present
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-            response_text = response_text.strip()
-        
-        validation = json.loads(response_text)
-        return validation
-    
-    except Exception as e:
-        print(f"❌ Error validating opportunity: {e}")
-        return None
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        future_map = {
+            executor.submit(analyze_review_with_validation, review["text"], app_name): index
+            for index, review in enumerate(target_reviews)
+        }
+
+        for future in as_completed(future_map):
+            index = future_map[future]
+            try:
+                insight = future.result()
+            except Exception as e:
+                print(f"❌ Error processing review {index + 1}: {e}")
+                insight = None
+
+            if insight:
+                results_by_index[index] = {
+                    "review": target_reviews[index],
+                    "insight": insight,
+                }
+
+            completed_reviews += 1
+            if progress_callback:
+                progress_callback(completed_reviews, len(target_reviews))
+
+    return [results_by_index[index] for index in sorted(results_by_index)]
 
 
 def analyze_multiple_reviews(reviews_list, app_name, max_reviews=10):
@@ -280,21 +325,9 @@ def analyze_multiple_reviews(reviews_list, app_name, max_reviews=10):
     """
     print(f"\n🤖 Analyzing {min(len(reviews_list), max_reviews)} reviews...")
     
-    insights = []
-    
-    for i, review in enumerate(reviews_list[:max_reviews]):
-        print(f"   Processing review {i+1}/{min(len(reviews_list), max_reviews)}...")
-        insight = analyze_review(review, app_name)
-        
-        if insight:
-            # Validate the product opportunity
-            product_opportunity = insight.get("product_opportunity", "")
-            validation = validate_opportunity(product_opportunity, app_name)
-            
-            if validation:
-                insight["validation"] = validation
-        
-            insights.append(insight)
+    review_payload = [{"text": review} for review in reviews_list[:max_reviews]]
+    analyzed_pairs = analyze_reviews_concurrently(review_payload, app_name, max_reviews=max_reviews)
+    insights = [pair["insight"] for pair in analyzed_pairs]
     
     print(f"✅ Analyzed {len(insights)} reviews\n")
     
@@ -693,26 +726,25 @@ if st.button("Analyse"):
                 # Get texts for analysis
                 filtered_reviews = [r['text'] for r in reviews_data_filtered]
 
-                # Show some reviews as debug
-                st.write(f"📝 Sample review text: {filtered_reviews[0][:100]}...")
-
                 # Analyze up to the amount selected in the input
                 max_to_analyze = min(num_reviews, len(filtered_reviews))
-                st.write(f"🤖 Analyzing {max_to_analyze} reviews...")
+                progress_text = st.empty()
+                progress_bar = st.progress(0)
 
-                insights = []
-                for review in filtered_reviews[:max_to_analyze]:
-                    insight = analyze_review(review, selected_app_name)
+                def update_analysis_progress(completed, total):
+                    progress_text.write(f"🤖 Analisadas {completed}/{total} reviews...")
+                    progress_bar.progress(completed / total)
 
-                    if insight:
-                        # Validate the product opportunity
-                        product_opportunity = insight.get("product_opportunity", "")
-                        validation = validate_opportunity(product_opportunity, selected_app_name)
+                update_analysis_progress(0, max_to_analyze)
 
-                        if validation:
-                            insight["validation"] = validation
-
-                        insights.append(insight)
+                analyzed_pairs = analyze_reviews_concurrently(
+                    reviews_data_filtered,
+                    selected_app_name,
+                    max_reviews=max_to_analyze,
+                    progress_callback=update_analysis_progress,
+                )
+                insights = [pair["insight"] for pair in analyzed_pairs]
+                successful_reviews = [pair["review"] for pair in analyzed_pairs]
                 
                 st.write(f"✅ Analyzed {len(insights)} reviews")
                 
@@ -720,7 +752,7 @@ if st.button("Analyse"):
                     st.error("❌ No insights generated. Check the API key and review content.")
                 else:
                     # Convert to DataFrame
-                    results_df = insights_to_dataframe(insights, reviews_data_filtered[:len(insights)])
+                    results_df = insights_to_dataframe(insights, successful_reviews)
                     
                     st.success("✅ Analysis complete!")
                     st.dataframe(results_df)
