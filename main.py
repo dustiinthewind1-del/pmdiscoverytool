@@ -14,7 +14,12 @@ genai.configure(api_key=api_key)
 
 
 def create_model():
-    return genai.GenerativeModel("gemini-2.5-flash")
+    return genai.GenerativeModel(
+        "gemini-2.5-flash",
+        generation_config=genai.GenerationConfig(
+            thinking_config={"thinking_budget": 0}
+        ),
+    )
 
 
 @st.cache_data(show_spinner=False)
