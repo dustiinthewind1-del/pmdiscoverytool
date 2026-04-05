@@ -1,5 +1,5 @@
 streamlit
 google-play-scraper
-google-generativeai
+google-genai
 pandas
 python-dotenv

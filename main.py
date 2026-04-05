@@ -6,20 +6,22 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 from google_play_scraper import reviews, Sort, search, app as get_app_details
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key)
+client = genai.Client(api_key=api_key)
+
+GEMINI_MODEL = "gemini-2.5-flash"
+_THINKING_OFF = types.GenerateContentConfig(
+    thinking_config=types.ThinkingConfig(thinking_budget=0)
+)
 
 
 def create_model():
-    return genai.GenerativeModel(
-        "gemini-2.5-flash",
-        generation_config=genai.GenerationConfig(
-            thinking_config={"thinking_budget": 0}
-        ),
-    )
+    """Return a callable that generates content with thinking disabled."""
+    return client
 
 
 @st.cache_data(show_spinner=False)
@@ -247,7 +249,9 @@ Rules:
 """
     
     try:
-        response = create_model().generate_content(prompt)
+        response = create_model().models.generate_content(
+            model=GEMINI_MODEL, contents=prompt, config=_THINKING_OFF
+        )
         insight = parse_json_response(response.text)
 
         # Normalize field names so downstream code can use consistent keys.
@@ -413,7 +417,7 @@ Respond with JSON grouping them by 2-4 main themes:
 Only respond with valid JSON."""
     
     try:
-        response = genai.GenerativeModel("gemini-2.5-flash").generate_content(prompt)
+        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
         response_text = response.text.strip()
         
         if response_text.startswith("```"):
@@ -589,7 +593,7 @@ Write a concise executive summary (100-150 words) that:
 Be direct and actionable."""
     
     try:
-        response = genai.GenerativeModel("gemini-2.5-flash").generate_content(prompt)
+        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
         return response.text
     
     except Exception as e:
